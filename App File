@@ -1,0 +1,74 @@
+################################### APP UI Logic #############################
+library(shiny)
+# Defination of Shiny DashBoard
+ui<-shinyUI(fluidPage(
+  
+  #fluid pages scale their components in realtime to fill all available browser  width.
+  #Header Panel:Create a header panel containing an application title.
+  headerPanel(title="Demonstration of shiny widgets"),
+  #SidebarLayout(): It creates a layout with a sidebar and main area.
+  sidebarLayout(
+    #sidebar panel
+    sidebarPanel(
+      ("Enter the personal details"),
+      textInput("CompanyName","Enter Company Name",""),
+      textInput("Location","Enter Location of Head Office",""),
+      submitButton("Update"),
+      #radioButtons("Gender","Select the Gender",list("Male","Female"),""),
+      sliderInput("slider","Select Min and Max Range of Active Database in Cr",min=0,max=2,value=c(2,3),step = 0.05,animate = TRUE),
+      selectInput("Statnames","select the state",c("Maharashtra","Gujraat","Delhi"),selected = "Maharashtra",selectize=FALSE,multiple=FALSE),
+      selectInput("var","1. Select the variable from the iris dataset",choices = c("Sepal.Length"=1,"Sepal.Width"=2,"Petal.Length"=3),selected = 1),
+      br(),
+      sliderInput("bins","2. Select the number of Bins for histogram",min=5,max=25,value = 15),
+      br(),
+      radioButtons("colors","3.Select color of histogram",choices = c("green","red","yellow"),selected = "green"),
+      radioButtons(inputId = "var3",label = "Select the file type",choices = list("png","pdf")) 
+    ),
+    mainPanel(
+      ("Personal Information"),
+      tabsetPanel(type="tabs",
+                  tabPanel("Summary",textOutput("CompName"),textOutput("myLocation")),
+                  tabPanel("Data",textOutput("CompName1"),textOutput("myLocation1"),textOutput("out")),
+                  tabPanel("State",textOutput("state")),
+                  tabPanel("Plot",plotOutput("plot"),downloadButton(outputId = "down",label = "Download")),
+                  tabPanel("Data Understanding",verbatimTextOutput("str")))
+    )
+  )
+))
+
+
+######################### Server Logic ###########################
+
+server <- shinyServer(function(input,output)({
+  colm <- reactive({as.numeric(input$var)})
+  output$str <- renderPrint({str(iris) })
+  output$CompName <- renderText(paste("Comapany Name : ",input$CompanyName))
+  output$myLocation <- renderText(paste("Head Office : ",input$Location))
+  output$CompName1 <- renderText(paste("Comapany Name : ",input$CompanyName))
+  output$myLocation1 <- renderText(paste("Head Office : ",input$Location))
+  #output$myGender<- renderText(input$Gender)
+  output$out <- renderText(paste("The input Range as :",input$slider))
+  output$state <- renderText(input$Statnames)
+ 
+  output$plot <- renderPlot({ hist(iris[,colm()],breaks = seq(0,max(iris[,colm()],l=input$bins+1)),col=input$colors,main="Histofram of iris dataset",xlab=names(iris[colm()]))  })
+  
+  output$down<- downloadHandler(
+    filename = function(){ paste("iris",input$var3,sep=".")
+      
+    },
+    content = function(file) {
+      if(input$var3 == "png")
+        png(file)
+      else
+        pdf(file)
+      hist(iris[,colm()],breaks = seq(0,max(iris[,colm()],l=input$bins+1)),col=input$colors,main="Histofram of iris dataset",xlab=names(iris[colm()]))
+      dev.off()
+    }
+  )
+  
+}))
+
+
+############################################ Calling APP FUnctionality #####################################
+# Run the application 
+shinyApp(ui = ui, server = server)
